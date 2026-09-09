@@ -18,16 +18,27 @@ public class AgendamentoService {
 
     public Agendamento salvarAgendamento(Agendamento agendamento){
 
-        LocalDateTime horaAgendamento = agendamento.getDataHoraAgendamento();
-        LocalDateTime horaFim = agendamento.getDataHoraAgendamento().plusMinutes(1);
+        LocalDateTime horaAgendamento = agendamento.getDataHoraAgendamento()
+                .withSecond(0)
+                .withNano(0);
 
-        Agendamento agendados = agendamentoRepository.findByServicoAndDataHoraAgendamentoBetween(agendamento.getServico(),
-                horaAgendamento, horaFim);
+        agendamento.setDataHoraAgendamento(horaAgendamento);
 
+        if (horaAgendamento.getMinute() != 0) {
+            throw new RuntimeException("Os agendamentos devem ser feitos em horários cheios (ex: 11:00, 12:00).");
+        }
 
-        if(Objects.nonNull(agendados)){
+        LocalDateTime horaFim = horaAgendamento.plusMinutes(59);
+
+        List<Agendamento> conflitos = agendamentoRepository.findByDataHoraAgendamentoBetween(
+                horaAgendamento,
+                horaFim
+        );
+
+        if(!conflitos.isEmpty()){
             throw new RuntimeException("Horário já está preenchido");
         }
+
         return agendamentoRepository.save(agendamento);
     }
 
@@ -42,14 +53,48 @@ public class AgendamentoService {
         return agendamentoRepository.findByDataHoraAgendamentoBetween(primeiraHoraDia, horaFinalDia);
     }
 
-    public Agendamento alterarAgendamento(Agendamento agendamento, String cliente, LocalDateTime dataHoraAgendamento){
-        Agendamento agenda = agendamentoRepository.findByDataHoraAgendamentoAndCliente(dataHoraAgendamento, cliente);
+    public Agendamento alterarAgendamento(
+            Agendamento agendamento,
+            String cliente,
+            LocalDateTime dataHoraAgendamentoOriginal) {
 
-        if(Objects.isNull(agenda)){
-            throw new RuntimeException("Horário não está preenchido");
+        Agendamento agendaOriginal =
+                agendamentoRepository.findByDataHoraAgendamentoAndCliente(
+                        dataHoraAgendamentoOriginal,
+                        cliente
+                );
+
+        if (Objects.isNull(agendaOriginal)) {
+            throw new RuntimeException("Agendamento original não encontrado");
         }
 
-        agendamento.setId(agenda.getId());
+        LocalDateTime novaHoraAgendamento = agendamento.getDataHoraAgendamento()
+                .withSecond(0)
+                .withNano(0);
+
+        agendamento.setDataHoraAgendamento(novaHoraAgendamento);
+
+        if (novaHoraAgendamento.getMinute() != 0) {
+            throw new RuntimeException("Os agendamentos devem ser feitos em horários cheios (ex: 11:00, 12:00).");
+        }
+
+        LocalDateTime novaHoraFim = novaHoraAgendamento.plusMinutes(59);
+
+        List<Agendamento> conflitos = agendamentoRepository.findByDataHoraAgendamentoBetween(
+                novaHoraAgendamento,
+                novaHoraFim
+        );
+
+        boolean temConflito = conflitos.stream()
+                .anyMatch(conflito -> !conflito.getId().equals(agendaOriginal.getId()));
+
+        if (temConflito) {
+            throw new RuntimeException("O novo horário escolhido já está preenchido");
+        }
+
+        agendamento.setId(agendaOriginal.getId());
+        agendamento.setDataInsercao(agendaOriginal.getDataInsercao());
+
         return agendamentoRepository.save(agendamento);
     }
 }

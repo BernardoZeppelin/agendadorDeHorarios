@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/agendamentos")
@@ -39,12 +40,27 @@ public class AgendamentoController {
         return ResponseEntity.ok()
                 .body(agendamentoService.buscarAgendamentosDia(data));
     }
-
     @PutMapping
-    public ResponseEntity<Agendamento> alterarAgendamentos(@RequestBody Agendamento agendamento,
-                                                           @RequestParam String cliente,
-                                                           @RequestParam LocalDateTime dataHoraAgendamento) {
-        return ResponseEntity.accepted().body(agendamentoService.alterarAgendamento(agendamento,
-                cliente, dataHoraAgendamento));
+    public ResponseEntity<Agendamento> alterarAgendamento(
+            @RequestBody Agendamento agendamento,
+            @RequestParam String cliente,
+            @RequestParam LocalDateTime dataHoraAgendamento) {
+
+        return ResponseEntity.accepted().body(
+                agendamentoService.alterarAgendamento(
+                        agendamento,
+                        cliente,
+                        dataHoraAgendamento
+                )
+        );
     }
+
+    @RestControllerAdvice
+    public static class ApiExceptionHandler {
+        @ExceptionHandler(RuntimeException.class)
+        public ResponseEntity<Map<String, String>> handle(RuntimeException ex) {
+            return ResponseEntity.badRequest().body(Map.of("message", ex.getMessage()));
+        }
+    }
+
 }

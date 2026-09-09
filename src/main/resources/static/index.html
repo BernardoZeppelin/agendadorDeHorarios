@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Agenda · Painel de horários</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FAF9F6;
+    --surface:#FFFFFF;
+    --surface-alt:#F1EEE7;
+    --ink:#20241F;
+    --ink-soft:#5C6259;
+    --ink-faint:#8B9086;
+    --line:#E4E0D6;
+    --primary:#1F4B43;
+    --primary-ink:#12332D;
+    --primary-soft:#DCE8E3;
+    --accent:#C08A3E;
+    --accent-soft:#F3E5C6;
+    --danger:#B3452D;
+    --danger-soft:#F5DCD2;
+    --success:#3F7A5B;
+    --shadow-card: 0 1px 2px rgba(35,25,10,.05), 0 10px 24px -14px rgba(35,25,10,.28);
+    --shadow-drawer: -12px 0 40px -12px rgba(20,20,15,.35);
+    --radius-card: 14px;
+    --radius-control: 9px;
+    --font-display:'Fraunces', serif;
+    --font-body:'Inter', system-ui, sans-serif;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--font-body);
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  button{font-family:inherit;cursor:pointer;}
+  input{font-family:inherit;}
+  a{color:inherit;}
+
+  :focus-visible{
+    outline:2.5px solid var(--accent);
+    outline-offset:2px;
+    border-radius:4px;
+  }
+
+  /* ---------- layout shell ---------- */
+  .app{
+    max-width:920px;
+    margin:0 auto;
+    padding:0 24px 96px;
+  }
+
+  /* ---------- topbar ---------- */
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:20px;
+    padding:28px 0 22px;
+    flex-wrap:wrap;
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-family:var(--font-display);
+    font-weight:600;
+    font-size:22px;
+    color:var(--primary-ink);
+  }
+  .brand-mark{
+    width:34px;height:34px;
+    border-radius:9px;
+    background:var(--primary);
+    color:var(--accent-soft);
+    display:flex;align-items:center;justify-content:center;
+    font-size:17px;
+    flex-shrink:0;
+  }
+
+  .btn-primary{
+    background:var(--primary);
+    color:#fff;
+    border:none;
+    padding:11px 18px;
+    border-radius:var(--radius-control);
+    font-weight:600;
+    font-size:14.5px;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    transition:background .15s ease, transform .1s ease;
+    white-space:nowrap;
+  }
+  .btn-primary:hover{background:var(--primary-ink);}
+  .btn-primary:active{transform:translateY(1px);}
+
+  .btn-ghost{
+    background:transparent;
+    border:1.5px solid var(--line);
+    color:var(--ink);
+    padding:10px 16px;
+    border-radius:var(--radius-control);
+    font-weight:600;
+    font-size:14.5px;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .btn-ghost:hover{border-color:var(--primary); background:var(--primary-soft);}
+
+  /* ---------- day navigator ---------- */
+  .day-nav{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .nav-arrow{
+    width:36px;height:36px;
+    border-radius:50%;
+    border:1.5px solid var(--line);
+    background:var(--surface);
+    display:flex;align-items:center;justify-content:center;
+    font-size:17px;
+    color:var(--ink-soft);
+    transition:border-color .15s ease, color .15s ease;
+  }
+  .nav-arrow:hover{border-color:var(--primary); color:var(--primary);}
+
+  .day-label{
+    position:relative;
+    text-align:center;
+    min-width:210px;
+  }
+  .day-label .day-name{
+    display:block;
+    font-family:var(--font-display);
+    font-size:19px;
+    font-weight:600;
+    color:var(--primary-ink);
+    line-height:1.15;
+  }
+  .day-label .day-date{
+    display:block;
+    font-size:12.5px;
+    color:var(--ink-faint);
+    margin-top:2px;
+  }
+  .day-label input[type="date"]{
+    position:absolute;
+    inset:0;
+    opacity:0;
+    cursor:pointer;
+    width:100%;
+    height:100%;
+  }
+
+  /* ---------- summary strip ---------- */
+  .day-summary{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:2px 2px 18px;
+    border-bottom:1px solid var(--line);
+    margin-bottom:26px;
+    font-size:13.5px;
+    color:var(--ink-soft);
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .day-summary .next-chip{
+    background:var(--accent-soft);
+    color:#6B4A16;
+    padding:5px 11px;
+    border-radius:100px;
+    font-weight:600;
+    font-size:12.5px;
+  }
+
+  /* ---------- timeline ---------- */
+  .timeline{
+    position:relative;
+    padding-left:86px;
+  }
+  .timeline::before{
+    content:'';
+    position:absolute;
+    left:70px;
+    top:6px;
+    bottom:6px;
+    width:1.5px;
+    background:var(--line);
+  }
+
+  .appt-card{
+    position:relative;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius-card);
+    box-shadow:var(--shadow-card);
+    padding:16px 18px;
+    margin-bottom:16px;
+    display:flex;
+    gap:16px;
+    align-items:flex-start;
+    transition:box-shadow .15s ease, border-color .15s ease;
+    opacity:0;
+    transform:translateY(6px);
+    animation:card-in .45s ease forwards;
+  }
+  .appt-card:hover{
+    box-shadow:0 4px 10px -2px rgba(35,25,10,.10), 0 16px 32px -16px rgba(35,25,10,.30);
+    border-color:#D8D2C4;
+  }
+  @keyframes card-in{
+    to{opacity:1; transform:translateY(0);}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .appt-card{animation:none; opacity:1; transform:none;}
+  }
+
+  .appt-time{
+    position:absolute;
+    left:-86px;
+    top:18px;
+    width:70px;
+    text-align:right;
+    font-family:var(--font-display);
+    font-size:19px;
+    font-weight:600;
+    color:var(--primary-ink);
+    line-height:1.1;
+  }
+  .appt-time .dot{
+    position:absolute;
+    right:-24.5px;
+    top:6px;
+    width:9px;height:9px;
+    border-radius:50%;
+    background:var(--primary);
+    border:2px solid var(--bg);
+  }
+  .appt-card.is-next .appt-time .dot{background:var(--accent);}
+
+  .appt-body{flex:1; min-width:0;}
+  .appt-row-top{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .appt-row-top h3{
+    margin:0;
+    font-size:16px;
+    font-weight:700;
+    color:var(--ink);
+  }
+  .appt-badge{
+    font-size:11.5px;
+    font-weight:600;
+    color:var(--primary-ink);
+    background:var(--primary-soft);
+    padding:3px 9px;
+    border-radius:100px;
+  }
+  .appt-client{
+    margin:6px 0 0;
+    font-size:13.5px;
+    color:var(--ink-soft);
+  }
+  .appt-client .sep{margin:0 6px; color:var(--ink-faint);}
+
+  .appt-actions{
+    display:flex;
+    gap:6px;
+    flex-shrink:0;
+  }
+  .icon-btn{
+    background:transparent;
+    border:1.5px solid var(--line);
+    color:var(--ink-soft);
+    padding:7px 12px;
+    border-radius:8px;
+    font-size:12.5px;
+    font-weight:600;
+    transition:all .15s ease;
+  }
+  .icon-btn:hover{border-color:var(--primary); color:var(--primary); background:var(--primary-soft);}
+  .icon-btn.delete:hover{border-color:var(--danger); color:var(--danger); background:var(--danger-soft);}
+
+  .confirm-row{
+    position:absolute;
+    inset:0;
+    background:var(--surface);
+    border-radius:var(--radius-card);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:0 18px;
+    border:1px solid var(--danger-soft);
+  }
+  .confirm-row span{font-size:13.5px; font-weight:600; color:var(--danger);}
+  .confirm-row .confirm-actions{display:flex; gap:8px;}
+  .confirm-row button{
+    padding:7px 13px;
+    border-radius:8px;
+    font-size:12.5px;
+    font-weight:700;
+    border:1.5px solid transparent;
+  }
+  .confirm-row .btn-cancel{background:transparent; border-color:var(--line); color:var(--ink-soft);}
+  .confirm-row .btn-confirm{background:var(--danger); color:#fff;}
+
+  /* ---------- empty state ---------- */
+  .empty-state{
+    padding:64px 24px;
+    text-align:center;
+    border:1.5px dashed var(--line);
+    border-radius:var(--radius-card);
+    margin-left:-86px;
+  }
+  .empty-state .glyph{
+    width:46px;height:46px;
+    border-radius:50%;
+    background:var(--primary-soft);
+    color:var(--primary);
+    display:flex;align-items:center;justify-content:center;
+    margin:0 auto 16px;
+    font-size:20px;
+  }
+  .empty-state h3{
+    font-family:var(--font-display);
+    font-size:19px;
+    margin:0 0 6px;
+    color:var(--primary-ink);
+  }
+  .empty-state p{
+    margin:0 0 18px;
+    color:var(--ink-soft);
+    font-size:14px;
+  }
+
+  .loading-state{
+    padding:60px 0;
+    text-align:center;
+    color:var(--ink-faint);
+    font-size:14px;
+    margin-left:-86px;
+  }
+
+  /* ---------- drawer ---------- */
+  .drawer-overlay{
+    position:fixed; inset:0;
+    background:rgba(20,20,15,.38);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .2s ease;
+    z-index:40;
+  }
+  .drawer{
+    position:fixed;
+    top:0; right:0; bottom:0;
+    width:420px;
+    max-width:92vw;
+    background:var(--surface);
+    box-shadow:var(--shadow-drawer);
+    z-index:41;
+    transform:translateX(100%);
+    transition:transform .28s cubic-bezier(.2,.8,.25,1);
+    display:flex;
+    flex-direction:column;
+  }
+  body.drawer-open .drawer-overlay{opacity:1; pointer-events:auto;}
+  body.drawer-open .drawer{transform:translateX(0);}
+
+  .drawer-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:24px 26px 18px;
+    border-bottom:1px solid var(--line);
+  }
+  .drawer-head h2{
+    font-family:var(--font-display);
+    font-size:21px;
+    margin:0;
+    color:var(--primary-ink);
+  }
+  .drawer-close{
+    width:32px;height:32px;
+    border-radius:50%;
+    border:none;
+    background:var(--surface-alt);
+    color:var(--ink-soft);
+    font-size:16px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .drawer-close:hover{background:var(--danger-soft); color:var(--danger);}
+
+  .drawer-form{
+    padding:22px 26px 26px;
+    overflow-y:auto;
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+  }
+  .field label{
+    display:block;
+    font-size:12.5px;
+    font-weight:600;
+    color:var(--ink-soft);
+    margin-bottom:6px;
+  }
+  .field input{
+    width:100%;
+    padding:11px 13px;
+    border-radius:var(--radius-control);
+    border:1.5px solid var(--line);
+    font-size:14.5px;
+    color:var(--ink);
+    background:var(--surface);
+    transition:border-color .15s ease;
+  }
+  .field input:focus{border-color:var(--primary);}
+  .field .hint{
+    margin:6px 2px 0;
+    font-size:12px;
+    color:var(--ink-faint);
+  }
+  .field-row{display:flex; gap:12px;}
+  .field-row .field{flex:1;}
+
+  .drawer-footer{
+    padding:18px 26px 24px;
+    border-top:1px solid var(--line);
+    display:flex;
+    gap:10px;
+  }
+  .drawer-footer .btn-primary, .drawer-footer .btn-ghost{flex:1; justify-content:center;}
+  .btn-primary[disabled]{opacity:.6; pointer-events:none;}
+
+  .form-error{
+    background:var(--danger-soft);
+    color:var(--danger);
+    border-radius:var(--radius-control);
+    padding:10px 13px;
+    font-size:13px;
+    font-weight:600;
+    display:none;
+  }
+  .form-error.show{display:block;}
+
+  /* ---------- toasts ---------- */
+  .toast-region{
+    position:fixed;
+    bottom:24px;
+    left:50%;
+    transform:translateX(-50%);
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    z-index:60;
+    align-items:center;
+  }
+  .toast{
+    background:var(--primary-ink);
+    color:#fff;
+    padding:11px 18px;
+    border-radius:100px;
+    font-size:13.5px;
+    font-weight:600;
+    box-shadow:0 12px 28px -10px rgba(0,0,0,.4);
+    animation:toast-in .2s ease;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .toast.error{background:var(--danger);}
+  .toast.success{background:var(--primary);}
+  @keyframes toast-in{
+    from{opacity:0; transform:translateY(8px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+
+  /* ---------- responsive ---------- */
+  @media (max-width:640px){
+    .app{padding:0 16px 96px;}
+    .topbar{padding:20px 0 16px; gap:14px;}
+    .day-nav{width:100%; justify-content:space-between;}
+    .timeline{padding-left:64px;}
+    .timeline::before{left:50px;}
+    .appt-time{left:-64px; width:50px; font-size:16px;}
+    .appt-time .dot{right:-18.5px;}
+    .empty-state{margin-left:-64px;}
+    .loading-state{margin-left:-64px;}
+    .drawer{width:100%; max-width:100%; top:auto; height:88vh; border-radius:20px 20px 0 0; transform:translateY(100%);}
+    body.drawer-open .drawer{transform:translateY(0);}
+    .appt-card{flex-direction:column;}
+    .appt-actions{width:100%; justify-content:flex-end;}
+  }
+</style>
+</head>
+<body>
+
+  <div class="app">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark">✂</span><span>Agenda</span></div>
+
+      <div class="day-nav">
+        <button class="nav-arrow" id="prevDay" aria-label="Dia anterior">‹</button>
+        <div class="day-label">
+          <span class="day-name" id="dayName">—</span>
+          <span class="day-date" id="dayDate">—</span>
+          <input type="date" id="datePicker" aria-label="Escolher data" />
+        </div>
+        <button class="nav-arrow" id="nextDay" aria-label="Próximo dia">›</button>
+      </div>
+
+      <button class="btn-primary" id="newBtn">+ Novo agendamento</button>
+    </header>
+
+    <div class="day-summary">
+      <span id="countLabel">Carregando agenda…</span>
+      <span class="next-chip" id="nextChip" hidden></span>
+    </div>
+
+    <div id="timelineWrap">
+      <div class="loading-state" id="loadingState">Carregando horários…</div>
+      <div class="timeline" id="timeline" hidden></div>
+      <div class="empty-state" id="emptyState" hidden>
+        <div class="glyph">＋</div>
+        <h3>Nenhum horário marcado</h3>
+        <p>Este dia ainda está livre. Que tal marcar o primeiro horário?</p>
+        <button class="btn-primary" id="emptyNewBtn">+ Novo agendamento</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="drawer-overlay" id="overlay"></div>
+  <aside class="drawer" id="drawer" aria-hidden="true">
+    <div class="drawer-head">
+      <h2 id="drawerTitle">Novo agendamento</h2>
+      <button class="drawer-close" id="closeDrawer" aria-label="Fechar">×</button>
+    </div>
+    <form class="drawer-form" id="form">
+      <div class="form-error" id="formError"></div>
+
+      <div class="field">
+        <label for="f-servico">Serviço</label>
+        <input id="f-servico" name="servico" required placeholder="Corte + barba" />
+      </div>
+
+      <div class="field">
+        <label for="f-profissional">Profissional</label>
+        <input id="f-profissional" name="profissional" required placeholder="Marcos" />
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="f-cliente">Cliente</label>
+          <input id="f-cliente" name="cliente" required placeholder="Nome do cliente" />
+        </div>
+        <div class="field">
+          <label for="f-telefone">Telefone</label>
+          <input id="f-telefone" name="telefoneCliente" required placeholder="(11) 90000-0000" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="f-datahora">Data e hora</label>
+        <input id="f-datahora" name="dataHoraAgendamento" type="datetime-local" required />
+        <p class="hint">Um mesmo serviço não pode ter dois agendamentos no mesmo horário.</p>
+      </div>
+    </form>
+    <div class="drawer-footer">
+      <button type="button" class="btn-ghost" id="cancelBtn">Cancelar</button>
+      <button type="submit" form="form" class="btn-primary" id="saveBtn">Salvar agendamento</button>
+    </div>
+  </aside>
+
+  <div class="toast-region" id="toastRegion"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  // Same-origin by default (drop this file into src/main/resources/static of the
+  // Spring Boot project). If you serve the frontend separately, set this to
+  // e.g. "http://localhost:8080" and enable CORS on the backend.
+  const API_BASE = "";
+  const ENDPOINT = API_BASE + "/agendamentos";
+
+  const WEEKDAYS = ["Domingo","Segunda-feira","Terça-feira","Quarta-feira","Quinta-feira","Sexta-feira","Sábado"];
+  const MONTHS = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+
+  const state = {
+    currentDate: startOfDay(new Date()),
+    appointments: [],
+    editing: null // { originalCliente, originalDataHora } when editing
+  };
+
+  // ---------- element refs ----------
+  const el = {
+    dayName: document.getElementById('dayName'),
+    dayDate: document.getElementById('dayDate'),
+    datePicker: document.getElementById('datePicker'),
+    prevDay: document.getElementById('prevDay'),
+    nextDay: document.getElementById('nextDay'),
+    countLabel: document.getElementById('countLabel'),
+    nextChip: document.getElementById('nextChip'),
+    timeline: document.getElementById('timeline'),
+    loadingState: document.getElementById('loadingState'),
+    emptyState: document.getElementById('emptyState'),
+    newBtn: document.getElementById('newBtn'),
+    emptyNewBtn: document.getElementById('emptyNewBtn'),
+    drawer: document.getElementById('drawer'),
+    overlay: document.getElementById('overlay'),
+    drawerTitle: document.getElementById('drawerTitle'),
+    closeDrawer: document.getElementById('closeDrawer'),
+    cancelBtn: document.getElementById('cancelBtn'),
+    form: document.getElementById('form'),
+    saveBtn: document.getElementById('saveBtn'),
+    formError: document.getElementById('formError'),
+    toastRegion: document.getElementById('toastRegion'),
+  };
+
+  // ---------- date helpers ----------
+  function startOfDay(d){ const c = new Date(d); c.setHours(0,0,0,0); return c; }
+  function toDateParam(d){
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,'0');
+    const day = String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
+  }
+  function isSameDay(a,b){ return toDateParam(a) === toDateParam(b); }
+  function isoToLocalInputValue(iso){
+    // "2026-09-09T09:00:00" -> "2026-09-09T09:00" for <input type=datetime-local>
+    return iso.slice(0,16);
+  }
+  function localInputValueToIso(val){
+    // "2026-09-09T09:00" -> "2026-09-09T09:00:00"
+    return val.length === 16 ? val + ':00' : val;
+  }
+  function formatTime(iso){
+    return iso.slice(11,16);
+  }
+  function formatDayHeader(d){
+    el.dayName.textContent = WEEKDAYS[d.getDay()];
+    el.dayDate.textContent = `${d.getDate()} de ${MONTHS[d.getMonth()]}`;
+    el.datePicker.value = toDateParam(d);
+  }
+
+  // ---------- toasts ----------
+  function toast(message, type){
+    const t = document.createElement('div');
+    t.className = 'toast' + (type ? ' ' + type : '');
+    t.textContent = message;
+    el.toastRegion.appendChild(t);
+    setTimeout(() => {
+      t.style.transition = 'opacity .25s ease';
+      t.style.opacity = '0';
+      setTimeout(() => t.remove(), 250);
+    }, 3200);
+  }
+
+  // ---------- API ----------
+  async function fetchDay(date){
+    const res = await fetch(`${ENDPOINT}?data=${toDateParam(date)}`);
+    if(!res.ok) throw new Error('Não foi possível carregar a agenda.');
+    return res.json();
+  }
+
+  async function extractErrorMessage(res, fallback){
+    try{
+      const data = await res.json();
+      if(data && data.message && data.message !== 'no message available') return data.message;
+    }catch(e){ /* body wasn't json */ }
+    return fallback;
+  }
+
+  async function createAppointment(payload){
+    const res = await fetch(ENDPOINT, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok){
+      throw new Error(await extractErrorMessage(res, 'Este horário já está ocupado para o serviço selecionado.'));
+    }
+    return res.json();
+  }
+
+  async function updateAppointment(payload, originalCliente, originalDataHora){
+    const url = `${ENDPOINT}?cliente=${encodeURIComponent(originalCliente)}&dataHoraAgendamento=${encodeURIComponent(originalDataHora)}`;
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok){
+      throw new Error(await extractErrorMessage(res, 'Não foi possível salvar as alterações.'));
+    }
+    return res.json();
+  }
+
+  async function deleteAppointment(cliente, dataHora){
+    const url = `${ENDPOINT}?cliente=${encodeURIComponent(cliente)}&dataHoraAgendamento=${encodeURIComponent(dataHora)}`;
+    const res = await fetch(url, { method: 'DELETE' });
+    if(!res.ok) throw new Error('Não foi possível excluir o agendamento.');
+  }
+
+  // ---------- rendering ----------
+  async function loadDay(){
+    formatDayHeader(state.currentDate);
+    el.loadingState.hidden = false;
+    el.timeline.hidden = true;
+    el.emptyState.hidden = true;
+    el.countLabel.textContent = 'Carregando agenda…';
+    el.nextChip.hidden = true;
+
+    try{
+      const data = await fetchDay(state.currentDate);
+      state.appointments = (data || []).slice().sort((a,b) => a.dataHoraAgendamento.localeCompare(b.dataHoraAgendamento));
+      renderTimeline();
+    }catch(err){
+      toast(err.message || 'Erro ao carregar a agenda.', 'error');
+      state.appointments = [];
+      renderTimeline();
+    }finally{
+      el.loadingState.hidden = true;
+    }
+  }
+
+  function renderTimeline(){
+    const list = state.appointments;
+    el.countLabel.textContent = list.length === 0
+      ? 'Nenhum agendamento'
+      : (list.length === 1 ? '1 agendamento' : `${list.length} agendamentos`);
+
+    if(list.length === 0){
+      el.timeline.hidden = true;
+      el.emptyState.hidden = false;
+      return;
+    }
+
+    el.emptyState.hidden = true;
+    el.timeline.hidden = false;
+    el.timeline.innerHTML = '';
+
+    const now = new Date();
+    const today = isSameDay(state.currentDate, now);
+    let nextId = null;
+    if(today){
+      const upcoming = list.find(a => new Date(a.dataHoraAgendamento) >= now);
+      if(upcoming) nextId = upcoming.id;
+    }
+
+    list.forEach(appt => {
+      el.timeline.appendChild(buildCard(appt, appt.id === nextId));
+    });
+
+    if(nextId !== null){
+      const next = list.find(a => a.id === nextId);
+      el.nextChip.hidden = false;
+      el.nextChip.textContent = `Próximo às ${formatTime(next.dataHoraAgendamento)}`;
+    }else{
+      el.nextChip.hidden = true;
+    }
+  }
+
+  function buildCard(appt, isNext){
+    const card = document.createElement('article');
+    card.className = 'appt-card' + (isNext ? ' is-next' : '');
+
+    card.innerHTML = `
+      <div class="appt-time">${formatTime(appt.dataHoraAgendamento)}<span class="dot"></span></div>
+      <div class="appt-body">
+        <div class="appt-row-top">
+          <h3></h3>
+          <span class="appt-badge"></span>
+        </div>
+        <p class="appt-client"></p>
+      </div>
+      <div class="appt-actions">
+        <button type="button" class="icon-btn edit">Editar</button>
+        <button type="button" class="icon-btn delete">Excluir</button>
+      </div>
+    `;
+    card.querySelector('h3').textContent = appt.servico || '(sem serviço)';
+    card.querySelector('.appt-badge').textContent = appt.profissional || '—';
+    const clientEl = card.querySelector('.appt-client');
+    clientEl.textContent = appt.cliente || '(sem cliente)';
+    if(appt.telefoneCliente){
+      const sep = document.createElement('span');
+      sep.className = 'sep';
+      sep.textContent = '·';
+      clientEl.appendChild(sep);
+      clientEl.appendChild(document.createTextNode(appt.telefoneCliente));
+    }
+
+    card.querySelector('.edit').addEventListener('click', () => openDrawer('edit', appt));
+    card.querySelector('.delete').addEventListener('click', () => showDeleteConfirm(card, appt));
+
+    return card;
+  }
+
+  function showDeleteConfirm(card, appt){
+    if(card.querySelector('.confirm-row')) return;
+    const bar = document.createElement('div');
+    bar.className = 'confirm-row';
+    bar.innerHTML = `
+      <span>Excluir este agendamento?</span>
+      <span class="confirm-actions">
+        <button type="button" class="btn-cancel">Cancelar</button>
+        <button type="button" class="btn-confirm">Confirmar</button>
+      </span>
+    `;
+    bar.querySelector('.btn-cancel').addEventListener('click', () => bar.remove());
+    bar.querySelector('.btn-confirm').addEventListener('click', async () => {
+      bar.querySelector('.btn-confirm').textContent = 'Excluindo…';
+      try{
+        await deleteAppointment(appt.cliente, appt.dataHoraAgendamento);
+        toast('Agendamento excluído.', 'success');
+        loadDay();
+      }catch(err){
+        toast(err.message || 'Não foi possível excluir.', 'error');
+        bar.remove();
+      }
+    });
+    card.style.position = 'relative';
+    card.appendChild(bar);
+  }
+
+  // ---------- drawer / form ----------
+  function openDrawer(mode, appt){
+    el.form.reset();
+    el.formError.classList.remove('show');
+    state.editing = null;
+
+    if(mode === 'edit' && appt){
+      el.drawerTitle.textContent = 'Editar agendamento';
+      el.saveBtn.textContent = 'Salvar alterações';
+      el.form.servico.value = appt.servico || '';
+      el.form.profissional.value = appt.profissional || '';
+      el.form.cliente.value = appt.cliente || '';
+      el.form.telefoneCliente.value = appt.telefoneCliente || '';
+      el.form.dataHoraAgendamento.value = isoToLocalInputValue(appt.dataHoraAgendamento);
+      state.editing = { originalCliente: appt.cliente, originalDataHora: appt.dataHoraAgendamento };
+    }else{
+      el.drawerTitle.textContent = 'Novo agendamento';
+      el.saveBtn.textContent = 'Salvar agendamento';
+      const d = new Date(state.currentDate);
+      const now = new Date();
+      if(isSameDay(d, now)){ d.setHours(now.getHours()+1, 0, 0, 0); }
+      else{ d.setHours(9,0,0,0); }
+      el.form.dataHoraAgendamento.value = toDateParam(d) + 'T' + String(d.getHours()).padStart(2,'0') + ':00';
+    }
+
+    document.body.classList.add('drawer-open');
+    el.drawer.setAttribute('aria-hidden', 'false');
+    setTimeout(() => el.form.servico.focus(), 250);
+  }
+
+  function closeDrawer(){
+    document.body.classList.remove('drawer-open');
+    el.drawer.setAttribute('aria-hidden', 'true');
+    state.editing = null;
+  }
+
+  async function handleSubmit(e){
+    e.preventDefault();
+    el.formError.classList.remove('show');
+
+    const payload = {
+      servico: el.form.servico.value.trim(),
+      profissional: el.form.profissional.value.trim(),
+      cliente: el.form.cliente.value.trim(),
+      telefoneCliente: el.form.telefoneCliente.value.trim(),
+      dataHoraAgendamento: localInputValueToIso(el.form.dataHoraAgendamento.value)
+    };
+
+    el.saveBtn.disabled = true;
+    const originalLabel = el.saveBtn.textContent;
+    el.saveBtn.textContent = 'Salvando…';
+
+    try{
+      if(state.editing){
+        await updateAppointment(payload, state.editing.originalCliente, state.editing.originalDataHora);
+        toast('Agendamento atualizado.', 'success');
+      }else{
+        await createAppointment(payload);
+        toast('Agendamento criado com sucesso.', 'success');
+      }
+      closeDrawer();
+      loadDay();
+    }catch(err){
+      el.formError.textContent = err.message || 'Não foi possível salvar. Tente novamente.';
+      el.formError.classList.add('show');
+    }finally{
+      el.saveBtn.disabled = false;
+      el.saveBtn.textContent = originalLabel;
+    }
+  }
+
+  // ---------- events ----------
+  el.prevDay.addEventListener('click', () => {
+    const d = new Date(state.currentDate); d.setDate(d.getDate()-1);
+    state.currentDate = d; loadDay();
+  });
+  el.nextDay.addEventListener('click', () => {
+    const d = new Date(state.currentDate); d.setDate(d.getDate()+1);
+    state.currentDate = d; loadDay();
+  });
+  el.datePicker.addEventListener('change', () => {
+    if(!el.datePicker.value) return;
+    const [y,m,d] = el.datePicker.value.split('-').map(Number);
+    state.currentDate = new Date(y, m-1, d);
+    loadDay();
+  });
+
+  el.newBtn.addEventListener('click', () => openDrawer('new'));
+  el.emptyNewBtn.addEventListener('click', () => openDrawer('new'));
+  el.closeDrawer.addEventListener('click', closeDrawer);
+  el.cancelBtn.addEventListener('click', closeDrawer);
+  el.overlay.addEventListener('click', closeDrawer);
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape' && document.body.classList.contains('drawer-open')) closeDrawer();
+  });
+  el.form.addEventListener('submit', handleSubmit);
+
+  // ---------- init ----------
+  loadDay();
+})();
+</script>
+</body>
+</html>
